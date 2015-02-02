@@ -1,13 +1,14 @@
 package edu.buffalo.cse.cse486586.simplemessenger;
 
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-
-import edu.buffalo.cse.cse486586.simplemessenger.R;
 
 import android.app.Activity;
 import android.content.Context;
@@ -151,11 +152,73 @@ public class SimpleMessengerActivity extends Activity {
         @Override
         protected Void doInBackground(ServerSocket... sockets) {
             ServerSocket serverSocket = sockets[0];
-            
+           
             /*
              * TODO: Fill in your server code that receives messages and passes them
              * to onProgressUpdate().
              */
+            
+            Socket socket = null;
+        	try 
+        	{	
+        		/*
+        		 * SERVER WHILE LOOP
+        		 */
+        		while(true)
+        		{
+        			/*
+                     * accept the incoming request on the listening server socket
+                     */
+                    
+        			socket = null;
+                    try 
+                    {
+        				socket = serverSocket.accept();
+        			} 
+                    catch (IOException e) 
+                    {
+        				e.printStackTrace();
+        			}
+                    
+                    /*
+                     * Read from the socket to get the message
+                     */
+                	
+                    String message = "";
+        			BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+	        		/*
+	        		 * Spin until we receive a message after establishing the connection
+	        		 */
+	    			while ((message = reader.readLine()) == null)
+	        		{
+	        			Thread.yield();
+	        		}
+	    			
+					this.publishProgress(message);
+					
+	    			/*
+	            	 * Close the socket after we are done with it.
+	            	 */
+	            	try 
+	            	{
+	    				socket.close();
+	    			} 
+	            	catch (IOException e) 
+	            	{
+	    				e.printStackTrace();
+	    			}
+        		}
+        		/*
+        		 * ENDOF WHILE LOOP
+        		 */
+        		
+			} 
+        	catch (IOException e) 
+        	{
+				e.printStackTrace();
+				
+			}
+        	    	
             return null;
         }
 
@@ -212,11 +275,26 @@ public class SimpleMessengerActivity extends Activity {
                 Socket socket = new Socket(InetAddress.getByAddress(new byte[]{10, 0, 2, 2}),
                         Integer.parseInt(remotePort));
                 
-                String msgToSend = msgs[0];
                 /*
                  * TODO: Fill in your client code that sends out a message.
                  */
+                
+                while (!socket.isConnected())
+                {
+                	Thread.yield();
+                }
+                
+                String msgToSend = msgs[0];
+                PrintWriter socketWriter = new PrintWriter(socket.getOutputStream(),true);
+                socketWriter.write(msgToSend);
+
+                socketWriter.flush();
                 socket.close();
+                
+                /*
+                 * ENDOF client code
+                 */
+                
             } catch (UnknownHostException e) {
                 Log.e(TAG, "ClientTask UnknownHostException");
             } catch (IOException e) {
